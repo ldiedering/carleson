@@ -441,13 +441,10 @@ lemma partialFourierSum_bound {δ : ℝ} (hδ : 0 < δ) {g : ℝ → ℂ} (measu
 end
 
 set_option linter.flexible false in
-lemma rcarleson_exceptional_set_estimate {δ : ℝ} (δpos : 0 < δ) {f : ℝ → ℂ} (hmf : Measurable f)
-    {F : Set ℝ} (measurableSetF : MeasurableSet F)
-    {p : NNReal} (hp : p ≠ 0)
-    --(hf : eLpNorm f p (volume.restrict (Set.Ico 0 (2 * π))) ≤ δ.toNNReal)
+lemma rcarleson_exceptional_set_estimate {f : ℝ → ℂ}
+    {p : NNReal} (hp : p ∈ Set.Ioo 1 2) (hf : MemLp f p volume)
     {E : Set ℝ} (measurableSetE : MeasurableSet E) {ε : ENNReal} (hE : ∀ x ∈ E, ε ≤ T f x) :
-      ε ^ p.toReal * volume E ≤ C10_0_1 4 2 * eLpNorm f p ^ p.toReal := by
-  --TODO: fix constant
+      ε ^ p.toReal * volume E ≤ ((C_carleson_hasStrongType 4 p) * eLpNorm f p) ^ p.toReal := by
   calc ε ^ p.toReal * volume E
     _ = ∫⁻ _ in E, ε ^ p.toReal := by
       symm
@@ -459,28 +456,10 @@ lemma rcarleson_exceptional_set_estimate {δ : ℝ} (δpos : 0 < δ) {f : ℝ �
       exact hE x hx
     _ ≤ ∫⁻ x, T f x ^ p.toReal := by
       apply setLIntegral_le_lintegral
-    _ = eLpNorm (T f) p ^ p.toReal := Eq.symm (eLpNorm_nnreal_pow_eq_lintegral hp)
-    _ ≤ C10_0_1 4 2 * eLpNorm f p ^ p.toReal := by
+    _ = eLpNorm (T f) p ^ p.toReal := Eq.symm (eLpNorm_nnreal_pow_eq_lintegral (zero_lt_one.trans hp.1).ne.symm)
+    _ ≤ _ := by
       gcongr
-      sorry --use: rcarleson_strong_type
-    /-
-    _ = ENNReal.ofReal δ * ∫⁻ x in E, T (fun x ↦ (1 / δ) * f x) x := by
-      rw [← lintegral_const_mul']
-      swap; · exact ENNReal.ofReal_ne_top
-      congr with x
-      rw [carlesonOperatorReal_mul δpos]
-    _ ≤ ENNReal.ofReal δ * (C10_0_1 4 2 * (volume E) ^ (2 : ℝ)⁻¹ * (volume F) ^ (2 : ℝ)⁻¹) := by
-      gcongr
-      apply rcarleson measurableSetF measurableSetE _ (by fun_prop)
-      intro x
-      -- FIXME: simp? suggests output that doesn't work
-      simp
-      rw [_root_.abs_of_nonneg δpos.le, inv_mul_le_iff₀ δpos]
-      exact hf x
-    _ = ENNReal.ofReal (δ * C10_0_1 4 2) * (volume F) ^ (2 : ℝ)⁻¹ * (volume E) ^ (2 : ℝ)⁻¹ := by
-      rw [ENNReal.ofReal_mul δpos.le, ENNReal.ofReal_coe_nnreal]
-      ring
-    -/
+      apply rcarleson' hp hf
 
 /-
 lemma rcarleson_exceptional_set_estimate_specific {δ : ℝ} (δpos : 0 < δ) {f : ℝ → ℂ} (hmf : Measurable f)
