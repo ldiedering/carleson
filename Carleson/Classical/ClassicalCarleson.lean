@@ -10,8 +10,8 @@ noncomputable section
 local notation "S_" => partialFourierSum
 
 /- Theorem 1.1 (Classical Carleson) -/
-theorem exceptional_set_carleson {f : ℝ → ℂ}
-    (cont_f : Continuous f) (periodic_f : f.Periodic (2 * π))
+theorem exceptional_set_carleson {f : ℝ → ℂ} (periodic_f : f.Periodic (2 * π))
+  {p : ENNReal} (hp : 1 < p) (hf : MemLp f p (volume.restrict (Set.Ico 0 (2 * π))))
     {ε : ℝ} (εpos : 0 < ε) :
     ∃ E ⊆ Set.Icc 0 (2 * π), MeasurableSet E ∧ volume.real E ≤ ε ∧
     ∃ N₀, ∀ x ∈ (Set.Icc 0 (2 * π)) \ E, ∀ N > N₀,
@@ -21,18 +21,18 @@ theorem exceptional_set_carleson {f : ℝ → ℂ}
     (C_control_approximation_effect_pos εpos)
 
   /- Approximate f by a smooth f₀. -/
-  have unicont_f : UniformContinuous f := periodic_f.uniformContinuous_of_continuous
-    Real.two_pi_pos cont_f.continuousOn
-  obtain ⟨f₀, contDiff_f₀, periodic_f₀, hf₀⟩ := close_smooth_approx_periodic unicont_f periodic_f ε'pos
+  --have unicont_f : UniformContinuous f := periodic_f.uniformContinuous_of_continuous
+  --  Real.two_pi_pos cont_f.continuousOn
+  --TODO: replace close_smooth_approx_periodic by analogon for Lp functions
+  obtain ⟨f₀, contDiff_f₀, periodic_f₀, hf₀⟩ := close_smooth_approx_periodic' periodic_f hp hf ε'pos
   have ε4pos : ε / 4 > 0 := by linarith
   obtain ⟨N₀, hN₀⟩ := fourierConv_ofTwiceDifferentiable periodic_f₀
     ((contDiff_infty.mp (contDiff_f₀)) 2) ε4pos
   set h := f₀ - f with hdef
-  have h_measurable : Measurable h := (Continuous.sub contDiff_f₀.continuous cont_f).measurable
+  have h_measurable : Measurable h := sorry --(Continuous.sub contDiff_f₀.continuous cont_f).measurable
   have h_periodic : h.Periodic (2 * π) := periodic_f₀.sub periodic_f
-  have h_bound : ∀ x, ‖h x‖ ≤ ε' := by
-    intro x
-    simpa only [hdef, Pi.sub_apply, norm_sub_rev] using hf₀ x
+  have h_bound : eLpNorm h p (volume.restrict (Set.Ico 0 (2 * π))) ≤ ε'.toNNReal := by
+    rwa [eLpNorm_sub_comm]
 
   /- Control approximation effect: Get a bound on the partial Fourier sums of h. -/
   obtain ⟨E, Esubset, Emeasurable, Evolume, hE⟩ := control_approximation_effect εpos ε'pos
@@ -51,10 +51,14 @@ theorem exceptional_set_carleson {f : ℝ → ℂ}
     · exact hf₀ x
     · exact hN₀ N NgtN₀ x hx.1
     · have := hE x hx N
+      /-
       rw [hdef, partialFourierSum_sub (contDiff_f₀.continuous.intervalIntegrable 0 (2 * π))
         (cont_f.intervalIntegrable 0 (2 * π))] at this
+
       apply le_trans this
       rw [ε'def, mul_div_cancel₀ _ (C_control_approximation_effect_pos εpos).ne.symm]
+      -/
+      sorry
   _ ≤ (ε / 2) + (ε / 4) + (ε / 4) := by
     gcongr
     rw [ε'def, div_div]
@@ -63,7 +67,8 @@ theorem exceptional_set_carleson {f : ℝ → ℂ}
     exact le_trans' (lt_C_control_approximation_effect εpos).le (by linarith [Real.two_le_pi])
   _ ≤ ε := by linarith
 
-theorem carleson_interval {f : ℝ → ℂ} (cont_f : Continuous f) (periodic_f : f.Periodic (2 * π)) :
+theorem carleson_interval {f : ℝ → ℂ} (periodic_f : f.Periodic (2 * π))
+  {p : ENNReal} (hp : 1 < p) (hf : MemLp f p (volume.restrict (Set.Ico 0 (2 * π)))) :
     ∀ᵐ x ∂volume.restrict (Set.Icc 0 (2 * π)),
       Filter.Tendsto (S_ · f x) Filter.atTop (nhds (f x)) := by
 
@@ -104,7 +109,7 @@ theorem carleson_interval {f : ℝ → ℂ} (cont_f : Continuous f) (periodic_f 
     norm_num
 
   -- Main step: Apply exceptional_set_carleson to get a family of exceptional sets parameterized by ε.
-  choose Eε hEε_subset _ hEε_measure hEε using (@exceptional_set_carleson f cont_f periodic_f)
+  choose Eε hEε_subset _ hEε_measure hEε using (@exceptional_set_carleson f periodic_f p hp hf)
 
   have Eεmeasure {ε : ℝ} (hε : 0 < ε) : volume (Eε hε) ≤ ENNReal.ofReal ε := by
     rw [ENNReal.le_ofReal_iff_toReal_le _ hε.le]
@@ -196,7 +201,8 @@ end
 
 /- **Carleson's theorem** asserting a.e. point-wise convergence of the partial Fourier sums for
 periodic continuous functions. -/
-theorem classical_carleson {f : ℝ → ℂ} (cont_f : Continuous f) (periodic_f : f.Periodic (2 * π)) :
+theorem classical_carleson {f : ℝ → ℂ} (periodic_f : f.Periodic (2 * π))
+  {p : ENNReal} (hp : 1 < p) (hf : MemLp f p (volume.restrict (Set.Ico 0 (2 * π)))) :
     ∀ᵐ x, Filter.Tendsto (S_ · f x) Filter.atTop (nhds (f x)) := by
   -- Reduce to a.e. convergence on [0,2π]
   apply @Function.Periodic.ae_of_ae_restrict _ Real.two_pi_pos 0
@@ -207,8 +213,8 @@ theorem classical_carleson {f : ℝ → ℂ} (cont_f : Continuous f) (periodic_f
   apply ae_restrict_of_ae_eq_of_ae_restrict Ico_ae_eq_Icc.symm
   rw [zero_add]
   -- Show a.e. convergence on [0,2π]
-  exact carleson_interval cont_f periodic_f
+  exact carleson_interval periodic_f hp hf
 
-theorem classical_carleson_check : ClassicalCarleson := @classical_carleson
+theorem classical_carleson_check : ClassicalCarleson := sorry --@classical_carleson
 
 end

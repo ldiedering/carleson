@@ -6,7 +6,7 @@ import Mathlib.Analysis.PSeries
 
 noncomputable section
 
-open Finset Real
+open Finset Real MeasureTheory
 
 local notation "S_" => partialFourierSum
 
@@ -31,6 +31,30 @@ lemma close_smooth_approx_periodic {f : ℝ → ℂ} (unicontf : UniformContinuo
   · rw [← Complex.dist_eq, dist_comm]
     exact ContDiffBump.dist_normed_convolution_le unicontf.continuous.aestronglyMeasurable
       fun y hy ↦ (hδ hy).le
+
+lemma close_smooth_approx_periodic' {f : ℝ → ℂ} (periodic_f : f.Periodic (2 * π))
+  {p : ENNReal} (hp : 1 < p) (hf : MemLp f p (volume.restrict (Set.Ico 0 (2 * π))))
+  {ε : ℝ} (εpos : ε > 0) :
+    ∃ (f₀ : ℝ → ℂ), ContDiff ℝ ∞ f₀ ∧ f₀.Periodic (2 * π) ∧
+      eLpNorm (f - f₀) p (volume.restrict (Set.Ico 0 (2 * π))) ≤ ε.toNNReal := by
+  /-
+  obtain ⟨δ, δpos, hδ⟩ := (Metric.uniformContinuous_iff.mp unicontf) ε εpos
+  let φ : ContDiffBump (0 : ℝ) := ⟨δ/2, δ, by linarith, by linarith⟩
+  set f₀ := MeasureTheory.convolution (φ.normed MeasureTheory.volume) f
+    (ContinuousLinearMap.lsmul ℝ ℝ) MeasureTheory.volume with f₀def
+  refine ⟨f₀, ?_, fun x ↦ ?_, fun x ↦ ?_⟩
+  · exact HasCompactSupport.contDiff_convolution_left _ φ.hasCompactSupport_normed
+      φ.contDiff_normed unicontf.continuous.locallyIntegrable
+  · rw [f₀def, MeasureTheory.convolution, MeasureTheory.convolution]
+    congr with t
+    congr 1
+    convert periodicf (x - t) using 2
+    ring
+  · rw [← Complex.dist_eq, dist_comm]
+    exact ContDiffBump.dist_normed_convolution_le unicontf.continuous.aestronglyMeasurable
+      fun y hy ↦ (hδ hy).le
+  -/
+  sorry
 
 -- local lemma
 lemma summable_of_le_on_nonzero {f g : ℤ → ℝ} (hgpos : 0 ≤ g) (hgf : ∀ i ≠ 0, g i ≤ f i)

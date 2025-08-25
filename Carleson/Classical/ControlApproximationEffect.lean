@@ -366,11 +366,12 @@ lemma le_CarlesonOperatorReal {g : ℝ → ℂ} (hg : IntervalIntegrable g volum
         trivial
 
 lemma partialFourierSum_bound {δ : ℝ} (hδ : 0 < δ) {g : ℝ → ℂ} (measurable_g : Measurable g)
-    (periodic_g : Function.Periodic g (2 * π)) (bound_g : ∀ x, ‖g x‖ ≤ δ)
+    (periodic_g : Function.Periodic g (2 * π))
+    (bound_g : eLpNorm g 1 (volume.restrict (Set.Ico 0 (2 * π))) ≤ δ.toNNReal)
     {N : ℕ} {x : ℝ} (hx : x ∈ Set.Icc 0 (2 * π)) :
     ‖S_ N g x‖ₑ ≤
     (T g x + T (conj ∘ g) x) / (ENNReal.ofReal (2 * π)) + ENNReal.ofReal (π * δ) := by
-  have intervalIntegrable_g : IntervalIntegrable g volume (-π) (3 * π) := intervalIntegrable_of_bdd measurable_g bound_g
+  have intervalIntegrable_g : IntervalIntegrable g volume (-π) (3 * π) := sorry --intervalIntegrable_of_bdd measurable_g bound_g
   have decomposition : S_ N g x
       = (  (∫ (y : ℝ) in (x - π)..(x + π),
               g y * ((max (1 - |x - y|) 0) * dirichletKernel' N (x - y)))
@@ -416,6 +417,7 @@ lemma partialFourierSum_bound {δ : ℝ} (hδ : 0 < δ) {g : ℝ → ℂ} (measu
 
         calc ‖∫ (y : ℝ) in x - π..x + π, g y * (dirichletKernel' N (x - y) - (max (1 - |x - y|) 0) * dirichletKernel' N (x - y))‖
           _ ≤ (δ * π) * |(x + π) - (x - π)| := by
+            /-
             apply intervalIntegral.norm_integral_le_of_norm_le_const
             intro y hy
             rw [Set.uIoc_of_le (by linarith [pi_pos])] at hy
@@ -425,6 +427,8 @@ lemma partialFourierSum_bound {δ : ℝ} (hδ : 0 < δ) {g : ℝ → ℂ} (measu
             · rw [Dirichlet_Hilbert_eq]
               apply Dirichlet_Hilbert_diff
               constructor <;> linarith [hy.1, hy.2]
+            -/
+            sorry
           _ = π * δ * (2 * π) := by
             simp only [add_sub_sub_cancel]
             rw [←two_mul, _root_.abs_of_nonneg Real.two_pi_pos.le]
@@ -438,15 +442,28 @@ end
 
 set_option linter.flexible false in
 lemma rcarleson_exceptional_set_estimate {δ : ℝ} (δpos : 0 < δ) {f : ℝ → ℂ} (hmf : Measurable f)
-    {F : Set ℝ} (measurableSetF : MeasurableSet F) (hf : ∀ x, ‖f x‖ ≤ δ * F.indicator 1 x)
+    {F : Set ℝ} (measurableSetF : MeasurableSet F)
+    {p : NNReal} (hp : p ≠ 0)
+    --(hf : eLpNorm f p (volume.restrict (Set.Ico 0 (2 * π))) ≤ δ.toNNReal)
     {E : Set ℝ} (measurableSetE : MeasurableSet E) {ε : ENNReal} (hE : ∀ x ∈ E, ε ≤ T f x) :
-      ε * volume E ≤ ENNReal.ofReal (δ * C10_0_1 4 2) * volume F ^ (2 : ℝ)⁻¹ * volume E ^ (2 : ℝ)⁻¹ := by
-  calc ε * volume E
-    _ = ∫⁻ _ in E, ε := by
+      ε ^ p.toReal * volume E ≤ C10_0_1 4 2 * eLpNorm f p ^ p.toReal := by
+  --TODO: fix constant
+  calc ε ^ p.toReal * volume E
+    _ = ∫⁻ _ in E, ε ^ p.toReal := by
       symm
       apply setLIntegral_const
-    _ ≤ ∫⁻ x in E, T f x := by
-      apply setLIntegral_mono' measurableSetE hE
+    _ ≤ ∫⁻ x in E, T f x ^ p.toReal := by
+      apply setLIntegral_mono' measurableSetE
+      intro x hx
+      gcongr
+      exact hE x hx
+    _ ≤ ∫⁻ x, T f x ^ p.toReal := by
+      apply setLIntegral_le_lintegral
+    _ = eLpNorm (T f) p ^ p.toReal := Eq.symm (eLpNorm_nnreal_pow_eq_lintegral hp)
+    _ ≤ C10_0_1 4 2 * eLpNorm f p ^ p.toReal := by
+      gcongr
+      sorry --use: rcarleson_strong_type
+    /-
     _ = ENNReal.ofReal δ * ∫⁻ x in E, T (fun x ↦ (1 / δ) * f x) x := by
       rw [← lintegral_const_mul']
       swap; · exact ENNReal.ofReal_ne_top
@@ -463,12 +480,17 @@ lemma rcarleson_exceptional_set_estimate {δ : ℝ} (δpos : 0 < δ) {f : ℝ �
     _ = ENNReal.ofReal (δ * C10_0_1 4 2) * (volume F) ^ (2 : ℝ)⁻¹ * (volume E) ^ (2 : ℝ)⁻¹ := by
       rw [ENNReal.ofReal_mul δpos.le, ENNReal.ofReal_coe_nnreal]
       ring
+    -/
 
-lemma rcarleson_exceptional_set_estimate_specific {δ : ℝ} (δpos : 0 < δ) {f : ℝ → ℂ} (hmf : Measurable f) (hf : ∀ x, ‖f x‖ ≤ δ)
+/-
+lemma rcarleson_exceptional_set_estimate_specific {δ : ℝ} (δpos : 0 < δ) {f : ℝ → ℂ} (hmf : Measurable f)
+  {p : ENNReal}
+  (hf : eLpNorm f p (volume.restrict (Set.Ico 0 (2 * π))) ≤ δ.toNNReal)
     {E : Set ℝ} (measurableSetE : MeasurableSet E) (E_subset : E ⊆ Set.Icc 0 (2 * π)) {ε : ENNReal} (hE : ∀ x ∈ E, ε ≤ T f x) :
       ε * volume E ≤ ENNReal.ofReal (δ * C10_0_1 4 2 * (2 * π + 2) ^ (2 : ℝ)⁻¹) * volume E ^ (2 : ℝ)⁻¹ := by
   rw [ENNReal.ofReal_mul (by have := @C10_0_1_pos 4 2 one_lt_two; positivity),
     ← ENNReal.ofReal_rpow_of_pos (by positivity)]
+  /-
   set F := (Set.Ioo (0 - 1) (2 * π + 1))
   set h := F.indicator f with hdef
   have hh : ∀ x, ‖h x‖ ≤ δ * F.indicator 1 x := by
@@ -477,13 +499,14 @@ lemma rcarleson_exceptional_set_estimate_specific {δ : ℝ} (δpos : 0 < δ) {f
     split_ifs with hx
     · simp only [Pi.one_apply, mul_one]; exact hf x
     · simp
+  -/
   convert rcarleson_exceptional_set_estimate δpos (hmf.indicator measurableSet_Ioo) measurableSet_Ioo hh measurableSetE ?_
   · rw [Real.volume_Ioo]
     ring_nf
   · intro x hx
     rw [← carlesonOperatorReal_eq_of_restrict_interval (E_subset hx)]
     exact hE x hx
-
+-/
 
 def C_control_approximation_effect (ε : ℝ) := (C10_0_1 4 2 * (8 / (π * ε)) ^ (2 : ℝ)⁻¹) + π
 
@@ -533,7 +556,9 @@ lemma C_control_approximation_effect_eq {ε : ℝ} {δ : ℝ} (ε_nonneg : 0 ≤
 /- This is Lemma 11.6.4 (partial Fourier sums of small) in the blueprint.-/
 lemma control_approximation_effect {ε : ℝ} (εpos : 0 < ε) {δ : ℝ} (hδ : 0 < δ)
     {h : ℝ → ℂ} (h_measurable : Measurable h)
-    (h_periodic : h.Periodic (2 * π)) (h_bound : ∀ x, ‖h x‖ ≤ δ) :
+    (h_periodic : h.Periodic (2 * π))
+    {p : ENNReal}
+    (h_bound : eLpNorm h p (volume.restrict (Set.Ico 0 (2 * π))) ≤ δ.toNNReal) :
     ∃ E ⊆ Set.Icc 0 (2 * π), MeasurableSet E ∧ volume.real E ≤ ε ∧ ∀ x ∈ Set.Icc 0 (2 * π) \ E,
       ∀ N, ‖S_ N h x‖ ≤ C_control_approximation_effect ε * δ := by
   set ε' := C_control_approximation_effect ε * δ with ε'def
@@ -556,11 +581,14 @@ lemma control_approximation_effect {ε : ℝ} (εpos : 0 < ε) {δ : ℝ} (hδ :
     simp only [Set.mem_Icc, Set.mem_diff, Set.mem_setOf_eq, not_and, not_exists, not_lt, and_imp]
     exact fun x x_nonneg x_le_two_pi h ↦ h x_nonneg x_le_two_pi
   -- This is needed later but better fits in here.
-  have conj_h_bound : ∀ (x : ℝ), ‖(star ∘ h) x‖ ≤ δ := by
+  have conj_h_bound : eLpNorm (star ∘ h) p (volume.restrict (Set.Ico 0 (2 * π))) ≤ ↑δ.toNNReal := by
+    /-
+    simp
     intro x
     simp only [RCLike.star_def, Function.comp_apply, RingHomIsometric.norm_map]
     exact h_bound x
-
+    -/
+    sorry
   have le_operator_add : ∀ x ∈ E, ENNReal.ofReal ((ε' - π * δ) * (2 * π)) ≤ T h x + T (conj ∘ h) x := by
     intro x hx
     obtain ⟨xIcc, N, hN⟩ := hx
@@ -577,7 +605,8 @@ lemma control_approximation_effect {ε : ℝ} (εpos : 0 < ε) {δ : ℝ} (hδ :
       _ ≤ ENNReal.ofReal (2 * π) * ‖S_ N h x‖ₑ := by rw [← ofReal_norm_eq_enorm]; gcongr
       _ ≤ ENNReal.ofReal (2 * π) * ((T h x + T (conj ∘ h) x) / (ENNReal.ofReal (2 * π)) + ENNReal.ofReal (π * δ)) := by
         gcongr
-        apply partialFourierSum_bound hδ h_measurable h_periodic h_bound xIcc
+        apply partialFourierSum_bound hδ h_measurable h_periodic _ xIcc
+        sorry --TODO : get this from h_bound
       _ = (T h x + T (conj ∘ h) x) + ENNReal.ofReal (π * δ * (2 * π)) := by
         rw [mul_add]
         congr
