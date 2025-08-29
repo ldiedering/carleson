@@ -20,6 +20,11 @@ variable {α α' ε E E₁ E₂ E₃ : Type*} {m : MeasurableSpace α} {m' : Mea
 def C_LorentzInterpolation (p₀ p₁ q₀ q₁ q : ℝ≥0∞) (C₀ C₁ A : ℝ≥0) (t : ℝ≥0∞) : ℝ≥0 :=
     sorry
 
+lemma C_LorentzInterpolation_pos {p₀ p₁ q₀ q₁ q : ℝ≥0∞} {C₀ C₁ A : ℝ≥0} {t : ℝ≥0∞} :
+  --TODO: probably need some assumptions
+  0 < C_LorentzInterpolation p₀ p₁ q₀ q₁ q C₀ C₁ A t :=
+    sorry
+
 /-- General Marcinkiewicz real interpolation theorem -/
 theorem exists_hasLorentzType_real_interpolation {p₀ p₁ r₀ r₁ q₀ q₁ s₀ s₁ p q : ℝ≥0∞}
     [MeasurableSpace E₁] [TopologicalSpace E₁] [ENormedAddCommMonoid E₁]
