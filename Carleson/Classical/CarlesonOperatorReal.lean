@@ -222,6 +222,13 @@ lemma carlesonOperatorReal_measurable {f : ℝ → ℂ} (f_measurable : Measurab
   rw [stronglyMeasurable_iff_measurable, Fdef]
   exact (measurable_mul_kernel f_measurable).indicator (measurable_dist measurableSet_Ioo)
 
+
+lemma carlesonOperatorReal_measurable' {f : ℝ → ℂ} (f_measurable : AEStronglyMeasurable f)
+    (hf : LocallyIntegrable f) : Measurable (T f) := by
+  /-TODO: mimic the proof of the version of this theorem for the general Carleson operator -/
+  sorry
+
+
 --TODO: Refactor the measurability proof to use the following.
 
 /-
@@ -262,7 +269,9 @@ lemma carlesonOperatorReal_mul {f : ℝ → ℂ} {x : ℝ} {a : ℝ} (ha : 0 < a
   rw [← enorm_norm (Complex.ofReal (1 / a)), Complex.norm_real, enorm_norm, ← enorm_mul,
     mul_one_div_cancel ha.ne', enorm_one, one_mul]
 
-lemma carlesonOperatorReal_eq_of_restrict_interval {f : ℝ → ℂ} {a b : ℝ} {x : ℝ} (hx : x ∈ Set.Icc a b) : T f x = T ((Set.Ioo (a - 1) (b + 1)).indicator f) x := by
+lemma carlesonOperatorReal_eq_of_restrict_interval {f : ℝ → ℂ} {a b : ℝ} {x : ℝ}
+  (hx : x ∈ Set.Icc a b) :
+    T f x = T ((Set.Ioo (a - 1) (b + 1)).indicator f) x := by
   simp_rw [carlesonOperatorReal]
   congr with n
   congr with _

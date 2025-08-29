@@ -122,6 +122,11 @@ def C_carleson_hasStrongType (a : ℕ) (q : ℝ≥0) :=
   let t := (interpolation_param q₀⁻¹ q₁⁻¹ q⁻¹).toNNReal;
   (C_LorentzInterpolation q₀ q₁ q₀ q₁ q (4 * C10_0_1 a q₀ / q₀) (4 * C10_0_1 a q₁ / q₁) 1 t)
 
+/-- The constant used in `two_sided_metric_carleson_hasStrongType`. -/
+lemma C_carleson_hasStrongType_pos {a : ℕ} {q : ℝ≥0} : 0 < C_carleson_hasStrongType a q := by
+  unfold C_carleson_hasStrongType
+  apply C_LorentzInterpolation_pos
+
 /- Theorem 10.0.1, reformulation -/
 theorem two_sided_metric_carleson_hasStrongType [Countable (Θ X)] (ha : 4 ≤ a) (hq : q ∈ Ioo 1 2)
     --(hqq' : q.HolderConjugate q')
