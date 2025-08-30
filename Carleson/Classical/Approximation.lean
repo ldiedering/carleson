@@ -34,9 +34,9 @@ lemma close_smooth_approx_periodic {f : ℝ → ℂ} (unicontf : UniformContinuo
 
 lemma close_smooth_approx_periodic' {f : ℝ → ℂ} (periodic_f : f.Periodic (2 * π))
   {p : ENNReal} (hp : 1 < p) (hf : MemLp f p (volume.restrict (Set.Ico 0 (2 * π))))
-  {ε : ℝ} (εpos : ε > 0) :
+  {ε : NNReal} (εpos : 0 < ε) :
     ∃ (f₀ : ℝ → ℂ), ContDiff ℝ ∞ f₀ ∧ f₀.Periodic (2 * π) ∧
-      eLpNorm (f - f₀) p (volume.restrict (Set.Ico 0 (2 * π))) ≤ ε.toNNReal := by
+      eLpNorm (f - f₀) p (volume.restrict (Set.Ico 0 (2 * π))) ≤ ε := by
   /-
   obtain ⟨δ, δpos, hδ⟩ := (Metric.uniformContinuous_iff.mp unicontf) ε εpos
   let φ : ContDiffBump (0 : ℝ) := ⟨δ/2, δ, by linarith, by linarith⟩

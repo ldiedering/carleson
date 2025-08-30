@@ -11,32 +11,37 @@ local notation "S_" => partialFourierSum
 
 /- Theorem 1.1 (Classical Carleson) -/
 theorem exceptional_set_carleson {f : ℝ → ℂ} (periodic_f : f.Periodic (2 * π))
-  {p : ENNReal} (hp : 1 < p) (hf : MemLp f p (volume.restrict (Set.Ico 0 (2 * π))))
+  {p : NNReal} (hp : p ∈ Set.Ioo 1 2) (hf : MemLp f p (volume.restrict (Set.Ico 0 (2 * π))))
     {ε : ℝ} (εpos : 0 < ε) :
     ∃ E ⊆ Set.Icc 0 (2 * π), MeasurableSet E ∧ volume.real E ≤ ε ∧
     ∃ N₀, ∀ x ∈ (Set.Icc 0 (2 * π)) \ E, ∀ N > N₀,
     ‖f x - S_ N f x‖ ≤ ε := by
-  set ε' := ε / 4 / C_control_approximation_effect ε with ε'def
-  have ε'pos : ε' > 0 := div_pos (div_pos εpos (by norm_num))
+  set ε' := ε / π + π * C_control_approximation_effect ε.toNNReal p with ε'def
+  have ε'pos : ε' > 0 := sorry
+  have εpos' : 0 < ε.toNNReal := toNNReal_pos.mpr εpos
+  have one_lt_p : (1 : ENNReal) < p := by simp [hp.1]
+    /-
+    div_pos (div_pos εpos (by norm_num))
     (C_control_approximation_effect_pos εpos)
-
+    -/
   /- Approximate f by a smooth f₀. -/
   --have unicont_f : UniformContinuous f := periodic_f.uniformContinuous_of_continuous
   --  Real.two_pi_pos cont_f.continuousOn
   --TODO: replace close_smooth_approx_periodic by analogon for Lp functions
-  obtain ⟨f₀, contDiff_f₀, periodic_f₀, hf₀⟩ := close_smooth_approx_periodic' periodic_f hp hf ε'pos
+  obtain ⟨f₀, contDiff_f₀, periodic_f₀, hf₀⟩ := close_smooth_approx_periodic' periodic_f one_lt_p hf
+    (@C_control_approximation_effect_pos _ p εpos')
   have ε4pos : ε / 4 > 0 := by linarith
   obtain ⟨N₀, hN₀⟩ := fourierConv_ofTwiceDifferentiable periodic_f₀
     ((contDiff_infty.mp (contDiff_f₀)) 2) ε4pos
   set h := f₀ - f with hdef
-  have h_measurable : Measurable h := sorry --(Continuous.sub contDiff_f₀.continuous cont_f).measurable
+  have h_measurable : AEStronglyMeasurable h := sorry --(Continuous.sub contDiff_f₀.continuous cont_f).measurable
   have h_periodic : h.Periodic (2 * π) := periodic_f₀.sub periodic_f
-  have h_bound : eLpNorm h p (volume.restrict (Set.Ico 0 (2 * π))) ≤ ε'.toNNReal := by
+  have h_bound : eLpNorm h p (volume.restrict (Set.Ico 0 (2 * π))) ≤ C_control_approximation_effect ε.toNNReal p := by
     rwa [eLpNorm_sub_comm]
 
   /- Control approximation effect: Get a bound on the partial Fourier sums of h. -/
-  obtain ⟨E, Esubset, Emeasurable, Evolume, hE⟩ := control_approximation_effect εpos ε'pos
-    h_measurable h_periodic h_bound
+  obtain ⟨E, Esubset, Emeasurable, Evolume, hE⟩ := control_approximation_effect εpos h_measurable
+    h_periodic hp h_bound
 
   /- This is a classical "epsilon third" argument. -/
   use E, Esubset, Emeasurable, Evolume, N₀
@@ -48,7 +53,8 @@ theorem exceptional_set_carleson {f : ℝ → ℂ} (periodic_f : f.Periodic (2 *
     add_le_add_right (norm_add_le ..) _
   _ ≤ ε' + (ε / 4) + (ε / 4) := by
     gcongr
-    · exact hf₀ x
+    · --exact hf₀ x
+      sorry --TODO: get such a bound from the Lp bound outside of a second exceptional set
     · exact hN₀ N NgtN₀ x hx.1
     · have := hE x hx N
       /-
@@ -60,18 +66,44 @@ theorem exceptional_set_carleson {f : ℝ → ℂ} (periodic_f : f.Periodic (2 *
       -/
       sorry
   _ ≤ (ε / 2) + (ε / 4) + (ε / 4) := by
+    /-
     gcongr
     rw [ε'def, div_div]
     apply div_le_div_of_nonneg_left εpos.le (by norm_num)
     rw [← div_le_iff₀' (by norm_num)]
     exact le_trans' (lt_C_control_approximation_effect εpos).le (by linarith [Real.two_le_pi])
+    -/
+    sorry
   _ ≤ ε := by linarith
 
 theorem carleson_interval {f : ℝ → ℂ} (periodic_f : f.Periodic (2 * π))
   {p : ENNReal} (hp : 1 < p) (hf : MemLp f p (volume.restrict (Set.Ico 0 (2 * π)))) :
     ∀ᵐ x ∂volume.restrict (Set.Icc 0 (2 * π)),
       Filter.Tendsto (S_ · f x) Filter.atTop (nhds (f x)) := by
-
+  set p' := (min (3 / 2) p).toNNReal with p'def
+  have : min (3 / 2) p ≠ ⊤ := by
+    apply ne_of_lt
+    rw [min_lt_iff]
+    left
+    refine ENNReal.div_lt_top (by simp) (by simp)
+  have hp' : p' ∈ Set.Ioo 1 2 := by
+    rw [p'def]
+    simp only [Set.mem_Ioo]
+    constructor
+    · rw [← ENNReal.coe_lt_iff_lt_toNNReal this, lt_min_iff]
+      simp only [ENNReal.coe_one]
+      symm
+      use hp
+      exact (ENNReal.lt_div_iff_mul_lt (by simp) (by simp)).mpr (by simp; norm_num)
+    · apply ENNReal.toNNReal_lt_of_lt_coe
+      simp only [ENNReal.coe_ofNat, inf_lt_iff]
+      left
+      refine ENNReal.div_lt_of_lt_mul ?_
+      norm_num
+  have hf' : MemLp f p' (volume.restrict (Set.Ico 0 (2 * π))) := by
+    apply MemLp.mono_exponent hf
+    rw [p'def, ENNReal.coe_toNNReal this]
+    exact min_le_right _ _
   let δ (k : ℕ) : ℝ := 1 / (k + 1) --arbitrary sequence tending to zero
   have δconv : Filter.Tendsto δ Filter.atTop (nhds 0) := tendsto_one_div_add_atTop_nhds_zero_nat
   have δpos (k : ℕ) : 0 < δ k := by apply div_pos zero_lt_one (by linarith)
@@ -109,7 +141,7 @@ theorem carleson_interval {f : ℝ → ℂ} (periodic_f : f.Periodic (2 * π))
     norm_num
 
   -- Main step: Apply exceptional_set_carleson to get a family of exceptional sets parameterized by ε.
-  choose Eε hEε_subset _ hEε_measure hEε using (@exceptional_set_carleson f periodic_f p hp hf)
+  choose Eε hEε_subset _ hEε_measure hEε using (@exceptional_set_carleson f periodic_f p' hp' hf')
 
   have Eεmeasure {ε : ℝ} (hε : 0 < ε) : volume (Eε hε) ≤ ENNReal.ofReal ε := by
     rw [ENNReal.le_ofReal_iff_toReal_le _ hε.le]
