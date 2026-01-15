@@ -44,11 +44,36 @@ lemma eLorentzNorm'_eq (p_nonzero : p ≠ 0) (p_ne_top : p ≠ ⊤) {f : α → 
         (volume.withDensity (fun (t : ℝ≥0) ↦ t⁻¹)) := by
   sorry
 
---TODO: probably need some assumptions on q here
 lemma eLorentzNorm'_eq' (p_nonzero : p ≠ 0) (p_ne_top : p ≠ ⊤) {f : α → ε} {μ : Measure α} :
   eLorentzNorm' f p q μ
     = eLpNorm (fun (t : ℝ≥0) ↦ t ^ (p⁻¹.toReal - q⁻¹.toReal) * rearrangement f t μ) q := by
-  sorry --should be an easy consequence of eLorentzNorm'_eq
+  by_cases q_zero : q = 0
+  · rw [q_zero]
+    simp
+  rw [eLorentzNorm'_eq p_nonzero p_ne_top]
+  by_cases q_top : q = ⊤
+  · rw [q_top]
+    simp only [ENNReal.toReal_inv, eLpNorm_exponent_top, ENNReal.inv_top, ENNReal.toReal_zero,
+      sub_zero]
+    unfold eLpNormEssSup essSup
+    congr 1
+    apply le_antisymm
+    · rw [Measure.ae_le_iff_absolutelyContinuous]
+      apply withDensity_absolutelyContinuous
+    · rw [Measure.ae_le_iff_absolutelyContinuous]
+      apply withDensity_absolutelyContinuous' (by fun_prop) (by simp)
+  rw [eLpNorm_eq_lintegral_rpow_enorm q_zero q_top, eLpNorm_eq_lintegral_rpow_enorm q_zero q_top,
+      lintegral_withDensity_eq_lintegral_mul₀ (by fun_prop) (by fun_prop)]
+  congr 1
+  apply lintegral_congr_ae
+  filter_upwards [Measure.ae_ne volume 0]
+  intro t ht
+  simp only [ENNReal.toReal_inv, enorm_eq_self, Pi.mul_apply]
+  rw [ENNReal.mul_rpow_of_nonneg _ _ (by simp), ENNReal.mul_rpow_of_nonneg _ _ (by simp),
+      ← ENNReal.rpow_mul, ← ENNReal.rpow_mul, ← mul_assoc, sub_mul,
+      inv_mul_cancel₀ (ENNReal.toReal_ne_zero.mpr ⟨q_zero, q_top⟩)]
+  congr
+  rw [ENNReal.rpow_sub _ _ (by simpa) (by simp), ENNReal.rpow_one, ENNReal.div_eq_inv_mul]
 
 lemma eLorentzNorm'_eq_integral_distribution_rpow {_ : MeasurableSpace α} {f : α → ε}
   {μ : Measure α} :
