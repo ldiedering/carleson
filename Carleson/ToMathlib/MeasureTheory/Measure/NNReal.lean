@@ -99,6 +99,37 @@ lemma NNReal.volume_eq_volume_ennreal {s : Set ℝ≥0} (hs : MeasurableSet (ofN
   congr 1
   exact Eq.symm (image_image ENNReal.toReal ofNNReal s)
 
+theorem NNReal.smul_map_volume_mul_left {a : ℝ≥0} (h : a ≠ 0) :
+    a • Measure.map (a * ·) volume = volume := by
+  ext s hs
+  rw [NNReal.volume_val, ← Real.smul_map_volume_mul_left (a := a) (by simpa)]
+  simp only [Measure.smul_apply, Measure.nnreal_smul_coe_apply, NNReal.abs_eq, ofReal_coe_nnreal,
+    val_eq_coe, smul_eq_mul]
+  congr 1
+  rw [Measure.map_apply (by fun_prop) hs, Measure.map_apply (by fun_prop), NNReal.volume_val]
+  rotate_left
+  · exact (MeasurableEmbedding.subtype_coe measurableSet_Ici).measurableSet_image.mpr hs
+  congr 1
+  ext x
+  simp only [val_eq_coe, mem_image, mem_preimage, Subtype.exists, coe_mk, exists_and_right,
+    exists_eq_right]
+  constructor
+  · rintro ⟨hx, hax⟩
+    apply Exists.intro
+    · exact hax
+    exact mul_nonneg (by simp) hx
+  · rintro ⟨hx, hax⟩
+    apply Exists.intro
+    · exact hax
+    rwa [mul_nonneg_iff_right_nonneg_of_pos] at hx
+    simp only [NNReal.coe_pos]
+    exact lt_of_le_of_ne (zero_le _) h.symm
+
+theorem NNReal.map_volume_mul_left {a : ℝ≥0} (h : a ≠ 0) :
+    Measure.map (a * ·) volume = a⁻¹ • volume := by
+  conv_rhs =>
+    rw [← NNReal.smul_map_volume_mul_left h, smul_smul, inv_mul_cancel₀ h, one_smul]
+
 lemma ENNReal.volume_eq_volume_preimage {s : Set ℝ≥0∞} (hs : MeasurableSet s) :
     volume s = volume (ENNReal.ofReal ⁻¹' s ∩ Ici 0) := by
   rw [ENNReal.volume_val hs, measure_congr ENNReal.map_toReal_ae_eq_map_toReal_comap_ofReal]
@@ -308,6 +339,35 @@ lemma ENNReal.toReal_Ioi_eq_Ioi {a : ℝ≥0∞} (ha : a ≠ ∞) :
     constructor
     · rwa [ENNReal.lt_ofReal_iff_toReal_lt ha]
     · exact (le_trans toReal_nonneg hxa.le)
+
+lemma ENNReal.ofReal_Ioo_eq {a b : ℝ≥0∞} : ENNReal.ofReal ⁻¹' Set.Ioo a b
+    = if a = ⊤ then ∅ else if a ≤ b ∧ b = ∞ then Set.Ioi a.toReal else Set.Ioo a.toReal b.toReal := by
+  split_ifs with ha h
+  · rw [ha]
+    simp
+  · rw [h.2]
+    ext x
+    simp only [mem_preimage, mem_Ioo, ofReal_lt_top, and_true, mem_Ioi]
+    exact lt_ofReal_iff_toReal_lt ha
+  · ext x
+    simp only [mem_preimage, mem_Ioo]
+    push_neg at h
+    by_cases hx : x < 0
+    · rw [ENNReal.ofReal_of_nonpos hx.le]
+      simp only [_root_.not_lt_zero, false_and, false_iff, not_and, not_lt]
+      intro ha
+      exfalso
+      have := ha.trans hx
+      have := @toReal_nonneg a
+      linarith
+    push_neg at hx
+    constructor
+    · intro h'
+      rw [← ofReal_lt_iff_lt_toReal hx (by aesop)]
+      use toReal_lt_of_lt_ofReal h'.1, h'.2
+    · intro h'
+      rwa [lt_ofReal_iff_toReal_lt ha, ofReal_lt_iff_lt_toReal hx]
+      aesop
 
 lemma ENNReal.ofReal_Ico_eq {b : ℝ≥0∞} : ENNReal.ofReal ⁻¹' Set.Ico 0 b
     = if b = 0 then ∅ else if b = ∞ then Set.univ else Set.Iio b.toReal := by

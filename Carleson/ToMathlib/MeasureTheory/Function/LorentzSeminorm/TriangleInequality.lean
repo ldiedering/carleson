@@ -20,6 +20,18 @@ variable {α ε : Type*} {m : MeasurableSpace α}
   [TopologicalSpace ε] [ESeminormedAddMonoid ε]
   {p q : ℝ≥0∞} {μ : Measure α} {f g : α → ε}
 
+--TODO: move?
+lemma eLpNormEssSup_nnreal_scale_constant' {f : ℝ≥0 → ℝ≥0∞} {a : ℝ≥0} (h : a ≠ 0)
+  (hf : AEStronglyMeasurable f) :
+    eLpNormEssSup (fun x ↦ f (a * x)) volume = eLpNormEssSup f volume := by
+  calc _
+    _ = eLpNormEssSup (f ∘ fun x ↦ a * x) volume := by congr
+  rw [← eLpNormEssSup_map_measure _ (by fun_prop)]
+  · apply eLpNormEssSup_congr_measure
+    rw [NNReal.map_volume_mul_left h]
+    apply Measure.ae_smul_measure_eq (by simpa)
+  · rw [NNReal.map_volume_mul_left h]
+    apply AEStronglyMeasurable.smul_measure hf
 
 --TODO: move?
 lemma eLpNorm_withDensity_scale_constant' {f : ℝ≥0 → ℝ≥0∞} (hf : AEStronglyMeasurable f) {p : ℝ≥0∞} {a : ℝ≥0} (h : a ≠ 0) :
@@ -28,15 +40,22 @@ lemma eLpNorm_withDensity_scale_constant' {f : ℝ≥0 → ℝ≥0∞} (hf : AES
   unfold eLpNorm
   split_ifs with p_zero p_top
   · rfl
-  · --TODO: case p = ⊤
-    sorry
+  · rw [eLpNormEssSup_withDensity (by fun_prop) (by simp),
+        eLpNormEssSup_withDensity (by fun_prop) (by simp),
+        eLpNormEssSup_nnreal_scale_constant' h hf]
   · symm
     rw [eLpNorm'_eq_lintegral_enorm, eLpNorm'_eq_lintegral_enorm]
     rw [lintegral_withDensity_eq_lintegral_mul₀' (by measurability)
           (by apply aeMeasurable_withDensity_inv; apply AEMeasurable.pow_const; exact AEStronglyMeasurable.enorm hf),
-        lintegral_withDensity_eq_lintegral_mul₀' (by measurability)
-          (by apply aeMeasurable_withDensity_inv; apply AEMeasurable.pow_const; apply AEStronglyMeasurable.enorm; sorry)]
-          --TODO: measurablility
+        lintegral_withDensity_eq_lintegral_mul₀' (by measurability)]
+    rotate_left
+    · apply aeMeasurable_withDensity_inv
+      apply AEMeasurable.pow_const
+      apply AEStronglyMeasurable.enorm
+      apply AEStronglyMeasurable.comp_aemeasurable
+      · rw [NNReal.map_volume_mul_left h]
+        apply hf.smul_measure
+      fun_prop
     simp only [enorm_eq_self, Pi.mul_apply, one_div]
     rw [← lintegral_nnreal_scale_constant' h, ← lintegral_const_mul' _ _ (by simp)]
     have : ∀ {t : ℝ≥0}, (ENNReal.ofNNReal t)⁻¹ = a * (ENNReal.ofNNReal (a * t))⁻¹ := by
