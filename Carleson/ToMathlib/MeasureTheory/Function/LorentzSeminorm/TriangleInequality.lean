@@ -2,6 +2,7 @@ import Carleson.ToMathlib.MeasureTheory.Function.LorentzSeminorm.Basic
 import Carleson.ToMathlib.Analysis.MeanInequalitiesPow
 import Carleson.ToMathlib.MeasureTheory.Function.LpSeminorm.TriangleInequality
 import Carleson.ToMathlib.MeasureTheory.Function.SimpleFunc
+import Carleson.ToMathlib.MeasureTheory.Function.LpSeminorm.CompareExp
 
 /-!
 # Triangle inequality for `Lorentz`-seminorm
@@ -411,9 +412,7 @@ theorem eLorentzNorm_add_le (one_le_q : 1 ≤ q) (q_le_p : q ≤ p)
     _ ≤ eLpNorm (lorentz_helper (f + g) p q μ) q.conjExponent * eLpNorm (fun (t : ℝ≥0) ↦ t ^ (p⁻¹.toReal - q⁻¹.toReal) * rearrangement f t μ) q
         + eLpNorm (lorentz_helper (f + g) p q μ) q.conjExponent * eLpNorm (fun (t : ℝ≥0) ↦ t ^ (p⁻¹.toReal - q⁻¹.toReal) * rearrangement g t μ) q := by
       gcongr <;>
-      · sorry
-        --apply eLpNorm_le_eLpNorm_mul_eLpNorm
-        --TODO: apply Hölder's inequality which does not seem to exist for enorm.
+      · apply eLpNorm_le_eLpNorm_mul_eLpNorm_of_enorm' (by fun_prop) (by fun_prop) (HolderConjugate.conjExponent one_le_q).symm
     _ = eLorentzNorm' f p q μ + eLorentzNorm' g p q μ := by
       rw [eLpNorm_lorentz_helper p_zero p_top one_le_q q_top hfg hfg', one_mul, one_mul,
         ← eLorentzNorm'_eq' p_zero p_top, ← eLorentzNorm'_eq' p_zero p_top]
